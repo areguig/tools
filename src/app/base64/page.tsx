@@ -1,14 +1,11 @@
 'use client';
 
-import dynamic from 'next/dynamic';
-import { Box } from '@mui/material';
-
-const Base64Tool = dynamic(() => import('./Base64Tool'), { ssr: false });
+import Base64Tool from './Base64Tool';
 
 export default function Base64Page() {
   return (
-    <Box sx={{ p: 2 }}>
+    <div className="p-4">
       <Base64Tool />
-    </Box>
+    </div>
   );
 }

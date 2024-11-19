@@ -1,81 +1,69 @@
-import { Box, Typography, Paper, Grid } from '@mui/material';
-import { Calculate, Link, DataObject, Compare, Code } from '@mui/icons-material';
+'use client';
+
+import Link from 'next/link';
+import { BiCodeAlt } from 'react-icons/bi';
+import { BiLink } from 'react-icons/bi';
+import { BiData } from 'react-icons/bi';
+import { BiGitCompare } from 'react-icons/bi';
+import { BiCode } from 'react-icons/bi';
 
 const tools = [
   {
-    name: 'Base64 Encoder/Decoder',
-    description: 'Encode and decode text to/from Base64 format',
-    icon: <Calculate sx={{ fontSize: 40 }} />,
-    path: '/base64'
+    name: 'Base64',
+    description: 'Encode and decode Base64 strings',
+    href: '/base64',
+    icon: <BiCodeAlt className="h-6 w-6" />,
   },
   {
     name: 'UTM Builder',
-    description: 'Create and manage campaign URLs with UTM parameters',
-    icon: <Link sx={{ fontSize: 40 }} />,
-    path: '/utm-builder'
+    description: 'Build UTM campaign URLs',
+    href: '/utm-builder',
+    icon: <BiLink className="h-6 w-6" />,
   },
   {
     name: 'JSON Prettifier',
-    description: 'Format and beautify JSON data',
-    icon: <DataObject sx={{ fontSize: 40 }} />,
-    path: '/prettyjson'
+    description: 'Format and validate JSON',
+    href: '/prettyjson',
+    icon: <BiData className="h-6 w-6" />,
   },
   {
     name: 'Diff Tool',
-    description: 'Compare two texts and find differences',
-    icon: <Compare sx={{ fontSize: 40 }} />,
-    path: '/difftool'
+    description: 'Compare text differences',
+    href: '/difftool',
+    icon: <BiGitCompare className="h-6 w-6" />,
   },
   {
     name: 'Wisdom',
     description: 'External tool for wisdom quotes',
-    icon: <Code sx={{ fontSize: 40 }} />,
-    path: 'https://areguig.github.io/wisdom',
-    external: true
-  }
+    href: 'https://areguig.github.io/wisdom',
+    icon: <BiCode className="h-6 w-6" />,
+    external: true,
+  },
 ];
 
 export default function Home() {
   return (
-    <Box sx={{ maxWidth: 1200, mx: 'auto', mt: 4 }}>
-      <Typography variant="h4" gutterBottom align="center" sx={{ mb: 4 }}>
-        Welcome to Developer Tools Collection
-      </Typography>
-      
-      <Grid container spacing={3}>
+    <div className="container py-8">
+      <h1 className="text-4xl font-bold mb-8">Developer Tools</h1>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {tools.map((tool) => (
-          <Grid item xs={12} sm={6} md={4} key={tool.name}>
-            <Paper
-              component={tool.external ? 'a' : 'a'}
-              href={tool.path}
-              target={tool.external ? '_blank' : undefined}
-              rel={tool.external ? 'noopener noreferrer' : undefined}
-              sx={{
-                p: 3,
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                textAlign: 'center',
-                textDecoration: 'none',
-                color: 'inherit',
-                transition: 'transform 0.2s',
-                '&:hover': {
-                  transform: 'translateY(-4px)',
-                }
-              }}
-            >
+          <Link
+            key={tool.name}
+            href={tool.href}
+            target={tool.external ? '_blank' : undefined}
+            rel={tool.external ? 'noopener noreferrer' : undefined}
+            className="p-6 bg-card hover:bg-accent/50 rounded-lg border border-border transition-colors"
+          >
+            <div className="flex items-center gap-4">
               {tool.icon}
-              <Typography variant="h6" sx={{ mt: 2 }}>
-                {tool.name}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                {tool.description}
-              </Typography>
-            </Paper>
-          </Grid>
+              <div>
+                <h2 className="text-xl font-semibold">{tool.name}</h2>
+                <p className="text-muted-foreground">{tool.description}</p>
+              </div>
+            </div>
+          </Link>
         ))}
-      </Grid>
-    </Box>
+      </div>
+    </div>
   );
 }

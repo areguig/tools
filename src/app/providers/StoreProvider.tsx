@@ -1,17 +1,12 @@
 'use client';
 
-import { useRef } from 'react';
-import { type StoreApi, useStore } from 'zustand';
+import { type ReactNode } from 'react';
+import { Provider } from 'jotai';
 
-interface StoreProviderProps<T> {
-  store: StoreApi<T>;
-  children: React.ReactNode;
+interface StoreProviderProps {
+  children: ReactNode;
 }
 
-export function StoreProvider<T>({ store, children }: StoreProviderProps<T>) {
-  const storeRef = useRef<StoreApi<T>>();
-  if (!storeRef.current) {
-    storeRef.current = store;
-  }
-  return children;
+export function StoreProvider({ children }: StoreProviderProps) {
+  return <Provider>{children}</Provider>;
 }

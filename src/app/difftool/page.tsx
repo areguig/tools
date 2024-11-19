@@ -1,225 +1,114 @@
 'use client';
 
 import { useState } from 'react';
-import { Box, TextField, Button, Stack, Paper, Typography, Alert, useTheme, Grid } from '@mui/material';
-
-// Define types for the diff package
-type DiffPart = {
-  value: string;
-  added?: boolean;
-  removed?: boolean;
-};
-
-interface LineWithNumber {
-  number: number;
-  content: string;
-  type: 'added' | 'removed' | 'unchanged';
-}
+import { BiGitCompare } from 'react-icons/bi';
+import { useToolsStore } from '../store/toolsStore';
+import { cn } from '@/lib/utils';
 
 export default function DiffTool() {
-  const theme = useTheme();
-  const [text1, setText1] = useState('');
-  const [text2, setText2] = useState('');
-  const [diff, setDiff] = useState<DiffPart[]>([]);
-  const [diffStats, setDiffStats] = useState({ additions: 0, deletions: 0 });
-  const [error, setError] = useState<string>('');
+  const { toolStates, updateToolState } = useToolsStore();
+  const [text1, setText1] = useState(toolStates.diff?.text1 || '');
+  const [text2, setText2] = useState(toolStates.diff?.text2 || '');
+  const [diff, setDiff] = useState<string[][]>([]);
 
-  const processLinesWithNumbers = (parts: DiffPart[], showAdded: boolean): LineWithNumber[] => {
-    let lineNumber = 1;
-    const result: LineWithNumber[] = [];
+  const computeDiff = () => {
+    const lines1 = text1.split('\n');
+    const lines2 = text2.split('\n');
+    const result: string[][] = [];
+    let i = 0, j = 0;
 
-    parts.forEach(part => {
-      const lines = part.value.split('\n');
-      // Don't process the last empty line that comes from the split
-      if (lines[lines.length - 1] === '') lines.pop();
+    while (i < lines1.length || j < lines2.length) {
+      const line1 = i < lines1.length ? lines1[i] : '';
+      const line2 = j < lines2.length ? lines2[j] : '';
 
-      lines.forEach(line => {
-        if (
-          (showAdded && part.added) ||
-          (!showAdded && part.removed) ||
-          (!part.added && !part.removed)
-        ) {
-          result.push({
-            number: lineNumber,
-            content: line,
-            type: part.added ? 'added' : part.removed ? 'removed' : 'unchanged'
-          });
-        }
-        if (
-          (showAdded && !part.removed) ||
-          (!showAdded && !part.added)
-        ) {
-          lineNumber++;
-        }
-      });
-    });
-
-    return result;
-  };
-
-  const calculateDiff = async () => {
-    try {
-      setError('');
-      const { diffLines } = await import('diff');
-      const differences = diffLines(text1, text2);
-      setDiff(differences);
-
-      // Calculate diff statistics
-      const stats = differences.reduce(
-        (acc, part) => ({
-          additions: acc.additions + (part.added ? part.value.split('\n').length - (part.value.endsWith('\n') ? 1 : 0) : 0),
-          deletions: acc.deletions + (part.removed ? part.value.split('\n').length - (part.value.endsWith('\n') ? 1 : 0) : 0),
-        }),
-        { additions: 0, deletions: 0 }
-      );
-      setDiffStats(stats);
-    } catch (err) {
-      setError('Failed to compare texts. Please try again.');
-      console.error('Diff error:', err);
+      if (line1 === line2) {
+        result.push(['equal', line1]);
+        i++;
+        j++;
+      } else if (i < lines1.length && (!lines2[j] || lines1[i] !== lines2[j])) {
+        result.push(['removed', line1]);
+        i++;
+      } else if (j < lines2.length && (!lines1[i] || lines1[i] !== lines2[j])) {
+        result.push(['added', line2]);
+        j++;
+      }
     }
+
+    setDiff(result);
+    updateToolState('diff', { text1, text2 });
   };
 
-  const leftLines = diff.length > 0 ? processLinesWithNumbers(diff, false) : [];
-  const rightLines = diff.length > 0 ? processLinesWithNumbers(diff, true) : [];
+  const renderDiff = () => {
+    return diff.map((line, index) => {
+      const [type, content] = line;
+      const bgColor = type === 'removed' ? 'bg-destructive/10' : type === 'added' ? 'bg-emerald-500/10' : '';
+      const textColor = type === 'removed' ? 'text-destructive' : type === 'added' ? 'text-emerald-500' : 'text-foreground';
+      const prefix = type === 'removed' ? '- ' : type === 'added' ? '+ ' : '  ';
+
+      return (
+        <div key={index} className={cn("font-mono text-sm px-4 py-1", bgColor, textColor)}>
+          {prefix}{content}
+        </div>
+      );
+    });
+  };
 
   return (
-    <Stack spacing={3} sx={{ maxWidth: 1200, margin: '0 auto' }}>
-      <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
-        <TextField
-          label="Original Text"
-          multiline
-          rows={8}
-          value={text1}
-          onChange={(e) => setText1(e.target.value)}
-          variant="outlined"
-          fullWidth
-          placeholder="Enter or paste the original text here"
-          sx={{ flex: 1 }}
-        />
-        <TextField
-          label="Modified Text"
-          multiline
-          rows={8}
-          value={text2}
-          onChange={(e) => setText2(e.target.value)}
-          variant="outlined"
-          fullWidth
-          placeholder="Enter or paste the modified text here"
-          sx={{ flex: 1 }}
-        />
-      </Box>
+    <div className="container py-8">
+      <div className="flex items-center gap-2 mb-8">
+        <BiGitCompare className="h-8 w-8" />
+        <h1 className="text-4xl font-bold">Diff Tool</h1>
+      </div>
 
-      <Button
-        variant="contained"
-        onClick={calculateDiff}
-        disabled={!text1 || !text2}
-        fullWidth
-      >
-        Compare Texts
-      </Button>
+      <div className="space-y-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div>
+            <h2 className="text-xl font-semibold mb-2">Original Text</h2>
+            <textarea
+              value={text1}
+              onChange={(e) => setText1(e.target.value)}
+              placeholder="Enter original text..."
+              rows={10}
+              className="w-full p-4 rounded-lg border bg-muted text-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none font-mono text-sm"
+            />
+          </div>
 
-      {error && <Alert severity="error">{error}</Alert>}
+          <div>
+            <h2 className="text-xl font-semibold mb-2">Modified Text</h2>
+            <textarea
+              value={text2}
+              onChange={(e) => setText2(e.target.value)}
+              placeholder="Enter modified text..."
+              rows={10}
+              className="w-full p-4 rounded-lg border bg-muted text-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none font-mono text-sm"
+            />
+          </div>
+        </div>
 
-      {diff.length > 0 && (
-        <>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h6">Differences</Typography>
-            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-              {diffStats.additions} additions, {diffStats.deletions} deletions
-            </Typography>
-          </Box>
+        <div className="flex justify-center">
+          <button
+            onClick={computeDiff}
+            disabled={!text1.trim() || !text2.trim()}
+            className={cn(
+              "flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors",
+              "bg-primary text-primary-foreground hover:bg-primary/90",
+              "disabled:opacity-50 disabled:cursor-not-allowed"
+            )}
+          >
+            <BiGitCompare className="h-5 w-5" />
+            Compare Texts
+          </button>
+        </div>
 
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <Paper
-              elevation={3}
-              sx={{
-                flex: 1,
-                bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.50',
-                borderRadius: 1,
-                p: 2,
-                width: '50%',
-              }}
-            >
-              <pre style={{ 
-                margin: 0, 
-                whiteSpace: 'pre-wrap', 
-                wordBreak: 'break-word',
-                height: 'auto',
-                maxHeight: 'none',
-                overflowY: 'visible'
-              }}>
-                {leftLines.map((line, idx) => (
-                  <div key={idx} style={{
-                    backgroundColor: line.type === 'removed' 
-                      ? theme.palette.mode === 'dark' 
-                        ? '#471b1b' 
-                        : '#ffeef0'
-                      : 'transparent',
-                    fontFamily: 'monospace',
-                    padding: '2px 0',
-                  }}>
-                    <span style={{ 
-                      color: theme.palette.text.secondary, 
-                      userSelect: 'none',
-                      display: 'inline-block',
-                      width: '3em',
-                      marginRight: '1em',
-                      textAlign: 'right'
-                    }}>
-                      {line.number}
-                    </span>
-                    {line.content}
-                  </div>
-                ))}
-              </pre>
-            </Paper>
-
-            <Paper
-              elevation={3}
-              sx={{
-                flex: 1,
-                bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.50',
-                borderRadius: 1,
-                p: 2,
-                width: '50%',
-              }}
-            >
-              <pre style={{ 
-                margin: 0, 
-                whiteSpace: 'pre-wrap', 
-                wordBreak: 'break-word',
-                height: 'auto',
-                maxHeight: 'none',
-                overflowY: 'visible'
-              }}>
-                {rightLines.map((line, idx) => (
-                  <div key={idx} style={{
-                    backgroundColor: line.type === 'added'
-                      ? theme.palette.mode === 'dark'
-                        ? '#1b4721'
-                        : '#e6ffed'
-                      : 'transparent',
-                    fontFamily: 'monospace',
-                    padding: '2px 0',
-                  }}>
-                    <span style={{ 
-                      color: theme.palette.text.secondary, 
-                      userSelect: 'none',
-                      display: 'inline-block',
-                      width: '3em',
-                      marginRight: '1em',
-                      textAlign: 'right'
-                    }}>
-                      {line.number}
-                    </span>
-                    {line.content}
-                  </div>
-                ))}
-              </pre>
-            </Paper>
-          </Box>
-        </>
-      )}
-    </Stack>
+        {diff.length > 0 && (
+          <div>
+            <h2 className="text-xl font-semibold mb-2">Differences</h2>
+            <div className="rounded-lg border overflow-hidden bg-muted">
+              {renderDiff()}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

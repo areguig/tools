@@ -1,130 +1,100 @@
 'use client';
 
-import { useCallback, useEffect } from 'react';
-import { Box, TextField, Button, Grid, Paper, Typography, IconButton, Alert, Tooltip } from '@mui/material';
-import { ContentCopy, SwapVert } from '@mui/icons-material';
-import { useToolsStore } from '../providers/ToolsStoreProvider';
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { BiCopy } from 'react-icons/bi';
+import { MdSwapHoriz } from 'react-icons/md';
 
 export default function Base64Tool() {
-  const { toolStates, updateToolState } = useToolsStore();
-  const { input, output, mode } = toolStates.base64;
+  const [input, setInput] = useState('');
+  const [output, setOutput] = useState('');
+  const [mode, setMode] = useState<'encode' | 'decode'>('encode');
+  const [error, setError] = useState<string | null>(null);
 
-  const handleEncode = useCallback(() => {
+  const handleInputChange = (value: string) => {
+    setInput(value);
+    setError(null);
     try {
-      const base64 = window.btoa(encodeURIComponent(input));
-      updateToolState('base64', { input, output: base64, mode });
+      if (mode === 'encode') {
+        setOutput(btoa(value));
+      } else {
+        setOutput(atob(value));
+      }
     } catch (err) {
-      console.error('Encode error:', err);
-      updateToolState('base64', { 
-        input, 
-        output: 'Failed to encode text. Make sure your input contains valid characters.', 
-        mode 
-      });
+      setError('Invalid input for ' + mode);
+      setOutput('');
     }
-  }, [input, mode, updateToolState]);
+  };
 
-  const handleDecode = useCallback(() => {
+  const handleModeToggle = () => {
+    setMode(mode === 'encode' ? 'decode' : 'encode');
+    setInput(output);
+    setOutput(input);
+    setError(null);
+  };
+
+  const copyToClipboard = async (text: string) => {
     try {
-      const text = decodeURIComponent(window.atob(input));
-      updateToolState('base64', { input, output: text, mode });
+      await navigator.clipboard.writeText(text);
     } catch (err) {
-      console.error('Decode error:', err);
-      updateToolState('base64', { 
-        input, 
-        output: 'Failed to decode Base64. Make sure your input is valid Base64.', 
-        mode 
-      });
+      console.error('Failed to copy text: ', err);
     }
-  }, [input, mode, updateToolState]);
-
-  const handleSwap = useCallback(() => {
-    updateToolState('base64', {
-      input: output,
-      output: '',
-      mode: mode === 'encode' ? 'decode' : 'encode'
-    });
-  }, [output, mode, updateToolState]);
-
-  const handleCopy = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(output);
-    } catch (err) {
-      console.error('Copy error:', err);
-    }
-  }, [output]);
+  };
 
   return (
-    <Box sx={{ maxWidth: 800, mx: 'auto', mt: 4 }}>
-      <Paper sx={{ p: 3, position: 'relative' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            Base64 {mode === 'encode' ? 'Encoder' : 'Decoder'}
-          </Typography>
-          <IconButton onClick={handleSwap} color="primary" title="Swap mode">
-            <SwapVert />
-          </IconButton>
-        </Box>
+    <div className="container mx-auto p-4 space-y-4">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-2xl font-bold">Base64 {mode === 'encode' ? 'Encoder' : 'Decoder'}</h2>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={handleModeToggle}
+          className="ml-auto"
+        >
+          <MdSwapHoriz className="h-4 w-4" />
+        </Button>
+      </div>
 
-        <Grid container spacing={3}>
-          <Grid item xs={12}>
-            <TextField
-              label="Input"
-              multiline
-              rows={4}
-              value={input}
-              onChange={(e) => updateToolState('base64', { input: e.target.value, output, mode })}
-              fullWidth
-              variant="outlined"
-              placeholder={mode === 'encode' ? 'Enter text to encode' : 'Enter Base64 to decode'}
-            />
-          </Grid>
+      <div className="space-y-4">
+        <div className="relative">
+          <Textarea
+            value={input}
+            onChange={(e) => handleInputChange(e.target.value)}
+            placeholder={`Enter text to ${mode}...`}
+            className="min-h-[200px]"
+          />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => copyToClipboard(input)}
+            className="absolute top-2 right-2"
+          >
+            <BiCopy className="h-4 w-4" />
+          </Button>
+        </div>
 
-          <Grid item xs={12}>
-            <Button
-              variant="contained"
-              onClick={mode === 'encode' ? handleEncode : handleDecode}
-              fullWidth
-              disabled={!input}
-            >
-              {mode === 'encode' ? 'Encode' : 'Decode'}
-            </Button>
-          </Grid>
+        <div className="relative">
+          <Textarea
+            value={output}
+            readOnly
+            placeholder="Output will appear here..."
+            className="min-h-[200px]"
+          />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => copyToClipboard(output)}
+            className="absolute top-2 right-2"
+          >
+            <BiCopy className="h-4 w-4" />
+          </Button>
+        </div>
 
-          {output && (
-            <Grid item xs={12}>
-              <Box sx={{ position: 'relative' }}>
-                <TextField
-                  label="Result"
-                  multiline
-                  rows={4}
-                  value={output}
-                  fullWidth
-                  variant="outlined"
-                  InputProps={{
-                    readOnly: true,
-                  }}
-                />
-                <Tooltip title="Copy to clipboard">
-                  <IconButton
-                    onClick={handleCopy}
-                    sx={{
-                      position: 'absolute',
-                      top: 8,
-                      right: 8,
-                      bgcolor: 'background.paper',
-                      '&:hover': {
-                        bgcolor: 'action.hover',
-                      },
-                    }}
-                  >
-                    <ContentCopy fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-              </Box>
-            </Grid>
-          )}
-        </Grid>
-      </Paper>
-    </Box>
+        {error && (
+          <div className="text-red-500 text-sm mt-2">{error}</div>
+        )}
+      </div>
+    </div>
   );
 }

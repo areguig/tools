@@ -1,195 +1,96 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { Box, TextField, Button, Grid, Paper, Typography, IconButton, Alert, Tooltip } from '@mui/material';
-import { ContentCopy } from '@mui/icons-material';
-import { useToolsStore } from '../providers/ToolsStoreProvider';
+import { useState } from 'react';
+import { BiData } from 'react-icons/bi';
+import { useToolsStore } from '../store/toolsStore';
+import { cn } from '@/lib/utils';
 
-interface LineProps {
-  number: number;
-  content: string;
-  indentation: number;
+function formatJSON(input: string): { formatted: string; error: string | null } {
+  try {
+    const parsed = JSON.parse(input);
+    return { formatted: JSON.stringify(parsed, null, 2), error: null };
+  } catch (e) {
+    return { formatted: '', error: (e as Error).message };
+  }
 }
 
-function colorizeJSON(content: string): string {
-  return content
-    .replace(/(".*?")/g, '<span style="color: #a6e22e">$1</span>')
-    .replace(/\b(true|false|null)\b/g, '<span style="color: #ae81ff">$1</span>')
-    .replace(/\b(\d+\.?\d*)\b/g, '<span style="color: #fd971f">$1</span>');
-}
-
-function formatJSONWithLineNumbers(json: string): LineProps[] {
-  const lines = json.split('\n');
-  let indentLevel = 0;
-  
-  return lines.map((line, index) => {
-    const trimmedLine = line.trim();
-    if (trimmedLine.match(/[}\]],?$/)) {
-      indentLevel = Math.max(0, indentLevel - 1);
-    }
-    const result = {
-      number: index + 1,
-      content: line.trim(),
-      indentation: indentLevel,
-    };
-    if (trimmedLine.match(/[{[],?$/)) {
-      indentLevel += 1;
-    }
-    return result;
-  });
-}
-
-export default function PrettyJSON() {
+export default function JSONPrettifier() {
   const { toolStates, updateToolState } = useToolsStore();
-  const { input, output } = toolStates.json;
+  const [input, setInput] = useState(toolStates.json?.input || '');
+  const [output, setOutput] = useState(toolStates.json?.output || '');
   const [error, setError] = useState<string | null>(null);
-  const [formattedLines, setFormattedLines] = useState<LineProps[]>([]);
 
-  const formatJSON = useCallback((minify = false) => {
-    try {
-      setError(null);
-      const parsed = JSON.parse(input);
-      const formatted = minify
-        ? JSON.stringify(parsed)
-        : JSON.stringify(parsed, null, 2);
-      
-      const lines = formatJSONWithLineNumbers(formatted);
-      setFormattedLines(lines);
-      updateToolState('json', { input, output: formatted });
-    } catch (err) {
-      setError('Invalid JSON. Please check your input.');
-      setFormattedLines([]);
-      updateToolState('json', { input, output: '' });
-    }
-  }, [input, updateToolState]);
+  const handleFormat = () => {
+    const { formatted, error } = formatJSON(input);
+    setOutput(formatted);
+    setError(error);
+    updateToolState('json', { input, output: formatted });
+  };
 
-  const handleCopy = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(output);
-    } catch (err) {
-      setError('Failed to copy to clipboard');
-    }
-  }, [output]);
+  const renderLineNumbers = (text: string) => {
+    return text.split('\n').map((_, i) => (
+      <div key={i} className="select-none text-muted-foreground text-right pr-4 text-sm">
+        {i + 1}
+      </div>
+    ));
+  };
 
   return (
-    <Box sx={{ maxWidth: 1200, mx: 'auto', mt: 4 }}>
-      <Paper sx={{ p: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          JSON Prettifier
-        </Typography>
+    <div className="container py-8">
+      <div className="flex items-center gap-2 mb-8">
+        <BiData className="h-8 w-8" />
+        <h1 className="text-4xl font-bold">JSON Prettifier</h1>
+      </div>
 
-        <Grid container spacing={3}>
-          <Grid item xs={12}>
-            <TextField
-              label="Input JSON"
-              multiline
-              rows={8}
-              value={input}
-              onChange={(e) => {
-                setError(null);
-                updateToolState('json', { input: e.target.value, output });
-              }}
-              fullWidth
-              variant="outlined"
-              placeholder="Paste your JSON here"
-              error={!!error}
-              helperText={error}
-            />
-          </Grid>
+      <div className="space-y-8">
+        <div>
+          <h2 className="text-xl font-semibold mb-2">Input JSON</h2>
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Paste your JSON here..."
+            rows={10}
+            className="w-full p-4 rounded-lg border bg-muted text-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none font-mono text-sm"
+          />
+        </div>
 
-          <Grid item xs={12}>
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <Button
-                  variant="contained"
-                  onClick={() => formatJSON(false)}
-                  fullWidth
-                  disabled={!input}
-                >
-                  Format
-                </Button>
-              </Grid>
-              <Grid item xs={6}>
-                <Button
-                  variant="contained"
-                  onClick={() => formatJSON(true)}
-                  fullWidth
-                  disabled={!input}
-                >
-                  Minify
-                </Button>
-              </Grid>
-            </Grid>
-          </Grid>
+        <div className="flex justify-center">
+          <button
+            onClick={handleFormat}
+            disabled={!input.trim()}
+            className={cn(
+              "flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors",
+              "bg-primary text-primary-foreground hover:bg-primary/90",
+              "disabled:opacity-50 disabled:cursor-not-allowed"
+            )}
+          >
+            <BiData className="h-5 w-5" />
+            Format JSON
+          </button>
+        </div>
 
-          {formattedLines.length > 0 && !error && (
-            <Grid item xs={12}>
-              <Box sx={{ position: 'relative' }}>
-                <Paper 
-                  elevation={0} 
-                  sx={{ 
-                    bgcolor: 'grey.100',
-                    borderRadius: 1,
-                    maxHeight: '600px',
-                    overflow: 'auto',
-                    fontFamily: 'monospace'
-                  }}
-                >
-                  <Box sx={{ display: 'flex', minWidth: '100%' }}>
-                    <Box 
-                      sx={{ 
-                        borderRight: 1,
-                        borderColor: 'grey.300',
-                        bgcolor: 'grey.200',
-                        p: 2,
-                        minWidth: 50,
-                        textAlign: 'right',
-                        userSelect: 'none',
-                        color: 'grey.600'
-                      }}
-                    >
-                      {formattedLines.map((line, idx) => (
-                        <div key={idx}>{line.number}</div>
-                      ))}
-                    </Box>
-                    <Box sx={{ p: 2, flex: 1, overflow: 'auto' }}>
-                      {formattedLines.map((line, idx) => (
-                        <div 
-                          key={idx} 
-                          style={{ 
-                            paddingLeft: `${line.indentation * 20}px`,
-                            whiteSpace: 'pre'
-                          }}
-                        >
-                          <span dangerouslySetInnerHTML={{ __html: colorizeJSON(line.content) }} />
-                        </div>
-                      ))}
-                    </Box>
-                  </Box>
-                </Paper>
-                {output && (
-                  <Tooltip title="Copy to clipboard">
-                    <IconButton
-                      onClick={handleCopy}
-                      sx={{
-                        position: 'absolute',
-                        top: 8,
-                        right: 8,
-                        bgcolor: 'background.paper',
-                        '&:hover': {
-                          bgcolor: 'action.hover',
-                        },
-                      }}
-                    >
-                      <ContentCopy fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                )}
-              </Box>
-            </Grid>
-          )}
-        </Grid>
-      </Paper>
-    </Box>
+        {error && (
+          <div className="p-4 rounded-lg bg-destructive/10 border border-destructive text-destructive">
+            {error}
+          </div>
+        )}
+
+        {output && !error && (
+          <div>
+            <h2 className="text-xl font-semibold mb-2">Formatted JSON</h2>
+            <div className="rounded-lg border overflow-hidden">
+              <div className="bg-muted p-4 flex">
+                <div className="flex-none">
+                  {renderLineNumbers(output)}
+                </div>
+                <pre className="flex-1 font-mono text-sm overflow-x-auto text-foreground">
+                  <code>{output}</code>
+                </pre>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

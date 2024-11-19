@@ -1,73 +1,99 @@
 'use client';
 
-import { createStore } from 'zustand';
+import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
 
-interface ToolState {
-  base64: {
-    input: string;
-    output: string;
-    mode: 'encode' | 'decode';
-  };
-  json: {
-    input: string;
-    output: string;
-  };
-  diff: {
-    text1: string;
-    text2: string;
-  };
-  utm: {
-    url: string;
-    campaign: string;
-    source: string;
-    medium: string;
-    term: string;
-    content: string;
-  };
+export interface Base64State {
+  input: string;
+  output: string;
+  mode: 'encode' | 'decode';
 }
 
-interface ToolsStore {
-  toolStates: ToolState;
-  updateToolState: (tool: keyof ToolState, state: any) => void;
-  clearAllStates: () => void;
+export interface JSONState {
+  input: string;
+  output: string;
 }
 
-const initialState: ToolState = {
+export interface DiffState {
+  text1: string;
+  text2: string;
+}
+
+export interface UTMState {
+  url: string;
+  source: string;
+  medium: string;
+  campaign: string;
+  term: string;
+  content: string;
+  output: string;
+}
+
+export interface WisdomState {
+  input: string;
+  output: string;
+}
+
+export interface ToolStates {
+  base64: Base64State;
+  json: JSONState;
+  diff: DiffState;
+  utm: UTMState;
+  wisdom: WisdomState;
+}
+
+export interface ToolsStore {
+  toolStates: ToolStates;
+  updateToolState: <T extends keyof ToolStates>(tool: T, state: Partial<ToolStates[T]>) => void;
+}
+
+const initialState: ToolStates = {
   base64: {
     input: '',
     output: '',
-    mode: 'encode'
+    mode: 'encode',
   },
   json: {
     input: '',
-    output: ''
+    output: '',
   },
   diff: {
     text1: '',
-    text2: ''
+    text2: '',
   },
   utm: {
     url: '',
-    campaign: '',
     source: '',
     medium: '',
+    campaign: '',
     term: '',
-    content: ''
-  }
+    content: '',
+    output: '',
+  },
+  wisdom: {
+    input: '',
+    output: '',
+  },
 };
 
-export const createToolsStore = () => {
-  return createStore<ToolsStore>()((set) => ({
-    toolStates: initialState,
-    updateToolState: (tool, state) =>
-      set((store) => ({
-        toolStates: {
-          ...store.toolStates,
-          [tool]: state
-        }
-      })),
-    clearAllStates: () => set({ toolStates: initialState })
-  }));
-};
-
-export type ToolsStoreType = ReturnType<typeof createToolsStore>;
+export const useToolsStore = create<ToolsStore>()(
+  persist(
+    (set) => ({
+      toolStates: initialState,
+      updateToolState: (tool, state) =>
+        set((store) => ({
+          toolStates: {
+            ...store.toolStates,
+            [tool]: {
+              ...store.toolStates[tool],
+              ...state,
+            },
+          },
+        })),
+    }),
+    {
+      name: 'tools-store',
+      storage: createJSONStorage(() => localStorage),
+    }
+  )
+);

@@ -1,186 +1,101 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Box, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Toolbar, Typography, AppBar, IconButton, CssBaseline } from '@mui/material';
-import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Code, Compare, Link as LinkIcon, DataObject, Menu, ChevronLeft, Terminal, DarkMode, LightMode } from '@mui/icons-material';
-import { useColorMode } from './ThemeRegistry';
-import { useToolsStore } from './providers/ToolsStoreProvider';
+import { usePathname } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { BiHomeAlt2 } from 'react-icons/bi';
+import { BiCodeAlt } from 'react-icons/bi';
+import { BiLink } from 'react-icons/bi';
+import { BiData } from 'react-icons/bi';
+import { BiGitCompare } from 'react-icons/bi';
+import { BiCode } from 'react-icons/bi';
+import { cn } from '@/lib/utils';
 
-const drawerWidth = 240;
-const drawerCollapsedWidth = 65;
+interface NavItem {
+  name: string;
+  href: string;
+  icon: JSX.Element;
+  external?: boolean;
+}
 
-const tools = [
-  { name: 'Base64', icon: <Code />, path: '/base64' },
-  { name: 'UTM Builder', icon: <LinkIcon />, path: '/utm-builder' },
-  { name: 'JSON Prettifier', icon: <DataObject />, path: '/prettyjson' },
-  { name: 'Diff Tool', icon: <Compare />, path: '/difftool' },
-  { name: 'Wisdom', icon: <Code />, path: 'https://areguig.github.io/wisdom', external: true },
+const navigation: NavItem[] = [
+  { name: 'Home', href: '/', icon: <BiHomeAlt2 className="h-5 w-5" /> },
+  { name: 'Base64', href: '/base64', icon: <BiCodeAlt className="h-5 w-5" /> },
+  { name: 'UTM Builder', href: '/utm-builder', icon: <BiLink className="h-5 w-5" /> },
+  { name: 'JSON Prettifier', href: '/prettyjson', icon: <BiData className="h-5 w-5" /> },
+  { name: 'Diff Tool', href: '/difftool', icon: <BiGitCompare className="h-5 w-5" /> },
+  {
+    name: 'Wisdom',
+    href: 'https://areguig.github.io/wisdom',
+    icon: <BiCode className="h-5 w-5" />,
+    external: true,
+  },
 ];
 
 export default function ClientLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   const pathname = usePathname();
-  const { mode, toggleColorMode } = useColorMode();
-  const [drawerOpen, setDrawerOpen] = useState(true);
-  const clearAllStates = useToolsStore(state => state.clearAllStates);
+  const [isExpanded, setIsExpanded] = useState(true);
+  const [isHovered, setIsHovered] = useState(false);
 
+  // Collapse sidebar after initial load
   useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 600) {
-        setDrawerOpen(false);
-      }
-    };
-    window.addEventListener('resize', handleResize);
-    handleResize();
-    return () => window.removeEventListener('resize', handleResize);
+    const timer = setTimeout(() => {
+      setIsExpanded(false);
+    }, 2000);
+    return () => clearTimeout(timer);
   }, []);
 
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      clearAllStates();
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [clearAllStates]);
-
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
-      <CssBaseline />
-      <AppBar
-        position="fixed"
-        sx={{
-          zIndex: (theme) => theme.zIndex.drawer + 1,
-          transition: (theme) => theme.transitions.create(['width', 'margin'], {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.leavingScreen,
-          }),
-        }}
+    <div className="flex min-h-screen bg-background">
+      {/* Sidebar */}
+      <div
+        className={cn(
+          "border-r border-border bg-card transition-all duration-300 ease-in-out",
+          isExpanded || isHovered ? "w-64" : "w-16"
+        )}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
       >
-        <Toolbar>
-          <IconButton
-            color="inherit"
-            edge="start"
-            onClick={() => setDrawerOpen(!drawerOpen)}
-            sx={{ mr: 2 }}
-          >
-            {drawerOpen ? <ChevronLeft /> : <Menu />}
-          </IconButton>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Terminal sx={{ fontSize: 28 }} />
-            <Typography
-              variant="h6"
-              noWrap
-              component={Link}
-              href="/"
-              sx={{
-                textDecoration: 'none',
-                color: 'inherit',
-                cursor: 'pointer',
-                fontWeight: 600,
-                '&:hover': {
-                  opacity: 0.8,
-                },
-              }}
-            >
-              Code with AI Projects
-            </Typography>
-          </Box>
-          <IconButton onClick={toggleColorMode} color="inherit" sx={{ ml: 1 }}>
-            {mode === 'dark' ? <LightMode /> : <DarkMode />}
-          </IconButton>
-        </Toolbar>
-      </AppBar>
-      <Drawer
-        variant="permanent"
-        sx={{
-          width: drawerOpen ? drawerWidth : drawerCollapsedWidth,
-          flexShrink: 0,
-          '& .MuiDrawer-paper': {
-            width: drawerOpen ? drawerWidth : drawerCollapsedWidth,
-            boxSizing: 'border-box',
-            transition: (theme) => theme.transitions.create('width', {
-              easing: theme.transitions.easing.sharp,
-              duration: theme.transitions.duration.enteringScreen,
-            }),
-            overflowX: 'hidden',
-          },
-        }}
-      >
-        <Toolbar />
-        <Box sx={{ overflow: 'hidden' }}>
-          <List>
-            {tools.map((tool) => (
-              <ListItem key={tool.name} disablePadding>
-                {tool.external ? (
-                  <ListItemButton component="a" href={tool.path} target="_blank" rel="noopener noreferrer">
-                    <ListItemIcon>{tool.icon}</ListItemIcon>
-                    <ListItemText 
-                      primary={tool.name} 
-                      sx={{ 
-                        opacity: drawerOpen ? 1 : 0,
-                        transition: (theme) => theme.transitions.create('opacity', {
-                          duration: theme.transitions.duration.enteringScreen,
-                        })
-                      }} 
-                    />
-                  </ListItemButton>
-                ) : (
-                  <Link href={tool.path} style={{ textDecoration: 'none', color: 'inherit', width: '100%' }}>
-                    <ListItemButton
-                      selected={pathname === tool.path}
-                      sx={{
-                        minHeight: 48,
-                        justifyContent: drawerOpen ? 'initial' : 'center',
-                        px: 2.5,
-                      }}
-                    >
-                      <ListItemIcon
-                        sx={{
-                          minWidth: 0,
-                          mr: drawerOpen ? 3 : 'auto',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        {tool.icon}
-                      </ListItemIcon>
-                      <ListItemText 
-                        primary={tool.name} 
-                        sx={{ 
-                          opacity: drawerOpen ? 1 : 0,
-                          transition: (theme) => theme.transitions.create('opacity', {
-                            duration: theme.transitions.duration.enteringScreen,
-                          })
-                        }} 
-                      />
-                    </ListItemButton>
-                  </Link>
+        <div className={cn(
+          "flex h-16 items-center border-b border-border px-4 transition-all duration-300",
+          isExpanded || isHovered ? "justify-between" : "justify-center"
+        )}>
+          {(isExpanded || isHovered) && <h1 className="text-lg font-semibold">Dev Tools</h1>}
+        </div>
+        <nav className="space-y-1 p-2">
+          {navigation.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                target={item.external ? '_blank' : undefined}
+                rel={item.external ? 'noopener noreferrer' : undefined}
+                className={cn(
+                  'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                  isActive
+                    ? 'bg-accent text-accent-foreground'
+                    : 'hover:bg-accent/50',
+                  !isExpanded && !isHovered && "justify-center"
                 )}
-              </ListItem>
-            ))}
-          </List>
-        </Box>
-      </Drawer>
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          p: 3,
-          width: { sm: `calc(100% - ${drawerOpen ? drawerWidth : drawerCollapsedWidth}px)` },
-          ml: { sm: `${drawerOpen ? drawerWidth : drawerCollapsedWidth}px` },
-          transition: (theme) => theme.transitions.create(['width', 'margin'], {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.enteringScreen,
-          }),
-        }}
-      >
-        <Toolbar />
-        {children}
-      </Box>
-    </Box>
+              >
+                {item.icon}
+                {(isExpanded || isHovered) && item.name}
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
+
+      {/* Main content */}
+      <div className="flex-1">
+        <div className="h-16 border-b border-border px-4" />
+        <main className="flex-1">{children}</main>
+      </div>
+    </div>
   );
 }

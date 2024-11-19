@@ -1,36 +1,71 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🛠️ Tools Collection
 
-## Getting Started
+A modern, feature-rich collection of useful utilities built with Next.js and Material UI. This project was developed with the assistance of [Windsurf](https://github.com/codeium/windsurf), the world's first agentic IDE.
 
-First, run the development server:
+## 🌟 Features
+
+- **Base64 Encoder/Decoder**: Easily encode and decode Base64 strings with UTF-8 support
+- **JSON Prettifier**: Format and minify JSON with syntax highlighting
+- **Diff Tool**: Compare text with side-by-side diff view
+- **UTM Builder**: Generate UTM tracking links for marketing campaigns
+
+## 🚀 Live Demo
+
+Visit the live application at: [https://areguig.github.io/tools](https://areguig.github.io/tools)
+
+## 💻 Tech Stack
+
+- **Framework**: [Next.js](https://nextjs.org/)
+- **UI Components**: [Material UI](https://mui.com/)
+- **State Management**: [Zustand](https://github.com/pmndrs/zustand)
+- **Styling**: Tailwind CSS
+- **Language**: TypeScript
+
+## ✨ Key Features
+
+- 🎨 Dynamic theme switching (Light/Dark mode)
+- 📱 Responsive design with collapsible sidebar
+- 💾 Persistent tool state across navigation
+- 📋 Clipboard integration
+- 🎯 Error handling and validation
+
+## 🛠️ Development
 
 ```bash
+# Install dependencies
+npm install
+
+# Run development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+# Build for production
+npm run build
+
+# Start production server
+npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🤖 Built with Windsurf
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+This project was developed with the assistance of Windsurf, an innovative AI-powered IDE that enables:
+- Intelligent code generation and refactoring
+- Context-aware coding assistance
+- Automated dependency management
+- Smart error handling suggestions
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 📝 License
 
-## Learn More
+MIT License - feel free to use this project for your own purposes!
 
-To learn more about Next.js, take a look at the following resources:
+## 🤝 Contributing
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](https://github.com/areguig/tools/issues).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 👨‍💻 Author
 
-## Deploy on Vercel
+**Akli REGUIG**
+- GitHub: [@areguig](https://github.com/areguig)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+<p align="center">Made with ❤️ and Windsurf</p>
